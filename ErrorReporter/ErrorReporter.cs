@@ -31,6 +31,9 @@ namespace NJCrawford
 {
     public class ErrorReporter
     {
+        // Limit commandline to about 2000 characters (2000 seems to be the limit on my Windows 7 laptop)
+        private const int CommandLineMaxLength = 2000;
+
         // Application name to use in report
         private static string appName;
 
@@ -88,20 +91,20 @@ namespace NJCrawford
                         "Time: " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "\n" +
                         "Program: " + caller.FullName + "\n" +
                         "Program location: " + caller.Location + "\n" +
-                        "OS: " + Environment.OSVersion.ToString() + "\n" +
+                        "OS: " + GetOSVersionString() + "\n" +
                         "OS Culture: " + System.Globalization.CultureInfo.CurrentCulture.Name + "\n" +
-                        "Framework: " + Environment.Version + "\n\n" +
+                        "Framework: " + Environment.Version + (Environment.Is64BitProcess ? " (x64)" : " (x86)") + "\n\n" +
                         "Error:\n" +
                         ex.GetType().ToString() + " (" + ex.Message + ")\n" +
                         ex.StackTrace;
                     // URL encode message
                     url += System.Uri.EscapeDataString(errorText.Trim());
 
-                    // Limit commandline to about 2000 characters (2000 seems to be the limit on my Windows 7 laptop)
-                    if(url.Length > 2000)
+                    // Limit command line length
+                    if (url.Length > CommandLineMaxLength)
                     {
                         string clippedMessage = System.Uri.EscapeDataString("\n(Report clipped)");
-                        url = url.Substring(0, 2000 - clippedMessage.Length);
+                        url = url.Substring(0, CommandLineMaxLength - clippedMessage.Length);
                         url += clippedMessage;
                     }
 
@@ -113,6 +116,86 @@ namespace NJCrawford
             {
                 Application.Exit();
             }
+        }
+
+        static string GetOSVersionString()
+        {
+            string retval = "";
+
+            try
+            {
+                // OS name
+                // Example: Windows 7 Home Premium
+                string productName;
+
+                // CSDVersion isn't available when running as 32 bit process on 64 bit Windows due to
+                // WoW64 oddities in the registry.
+                // Example: Service Pack 1
+                string servicePack;
+
+                // Windows NT version
+                // Example: 6.1
+                string ntVersion;
+
+                // Windows NT build
+                // Example: 7601
+                string ntBuild;
+
+                // ReleaseId is useful for Windows 10
+                // Example: 1511
+                string releaseId;
+
+                // Open registry and read values
+                // The using statement will automatically close and clean up after the registry key.
+                using (var reg = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion"))
+                {
+                    productName = (string)reg.GetValue("ProductName");
+                    servicePack = (string)reg.GetValue("CSDVersion");
+                    ntVersion = (string)reg.GetValue("CurrentVersion");
+                    ntBuild = (string)reg.GetValue("CurrentBuild");
+                    releaseId = (string)reg.GetValue("ReleaseId");
+                }
+
+                if(!String.IsNullOrEmpty(productName))
+                {
+                    retval = productName;
+
+                    if (!String.IsNullOrEmpty(servicePack))
+                    {
+                        retval += " " + servicePack;
+                    }
+                    if(!String.IsNullOrEmpty(releaseId))
+                    {
+                        retval += " release " + releaseId;
+                    }
+                }
+
+                if(!String.IsNullOrEmpty(ntVersion))
+                {
+                    retval += " (" + ntVersion;
+                    if(!String.IsNullOrEmpty(ntBuild))
+                    {
+                        retval += " build " + ntBuild;
+                    }
+                    retval += ")";
+                }
+            }
+            // Catch any and all errors from accessing the registry. The program has already crashed
+            // at this point, we're just trying to gather some useful information to report.
+            catch { }
+
+            // If there was an exception or nothing was found in the registry, fall back to 
+            // Environment.OSVersion.
+            if (String.IsNullOrWhiteSpace(retval))
+            {
+                // Old method - works up to Windows 8
+                retval = Environment.OSVersion.ToString() + " (Based on Environment.OSVersion)";
+            }
+
+            // Add 32/64 bit
+            retval += (Environment.Is64BitOperatingSystem ? " (x64)" : " (x86)");
+
+            return retval;
         }
     }
 }
