@@ -1,7 +1,7 @@
 ﻿/*
 Error Reporter - a convenient library for reporting errors
 
-Copyright (C) 2016 Nathan Crawford
+Copyright (C) 2017 Nathan Crawford
  
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -71,7 +71,7 @@ namespace NJCrawford
             {
                 // AppName is used in the message because caller.FullName is too verbose
                 if (MessageBox.Show(
-                    appName + " has encountered a error.\n\n" +
+                    appName + " has encountered an error.\n\n" +
                         "Click Yes to report this error using a web browser.\n" +
                         "Click No if you'd rather not report the error.\n" +
                         "Please consider submitting the report to help find and fix this issue.\n\n" +
