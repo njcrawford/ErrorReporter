@@ -29,6 +29,7 @@
         private void InitializeComponent()
         {
             this.btnCrash = new System.Windows.Forms.Button();
+            this.btnManualReport = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // btnCrash
@@ -41,11 +42,22 @@
             this.btnCrash.UseVisualStyleBackColor = true;
             this.btnCrash.Click += new System.EventHandler(this.btnCrash_Click);
             // 
+            // btnManualReport
+            // 
+            this.btnManualReport.Location = new System.Drawing.Point(12, 165);
+            this.btnManualReport.Name = "btnManualReport";
+            this.btnManualReport.Size = new System.Drawing.Size(260, 23);
+            this.btnManualReport.TabIndex = 1;
+            this.btnManualReport.Text = "Click here to manually report an error";
+            this.btnManualReport.UseVisualStyleBackColor = true;
+            this.btnManualReport.Click += new System.EventHandler(this.btnManualReport_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(284, 262);
+            this.Controls.Add(this.btnManualReport);
             this.Controls.Add(this.btnCrash);
             this.Name = "Form1";
             this.Text = "Form1";
@@ -56,6 +68,7 @@
         #endregion
 
         private System.Windows.Forms.Button btnCrash;
+        private System.Windows.Forms.Button btnManualReport;
     }
 }
 

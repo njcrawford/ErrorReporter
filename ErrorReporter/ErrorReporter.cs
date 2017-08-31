@@ -57,64 +57,72 @@ namespace NJCrawford
         // Based on code from http://stevenbenner.com/2010/01/reporting-of-unhandled-exceptions-in-your-distributable-net-application/
         static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
-            reportError((Exception)e.ExceptionObject);
+            ReportErrorPrompt((Exception)e.ExceptionObject);
         }
 
         public static void Application_ThreadException(object sender, System.Threading.ThreadExceptionEventArgs e)
         {
-            reportError(e.Exception);
+            ReportErrorPrompt(e.Exception);
         }
 
-        private static void reportError(Exception ex)
+        public static void ReportErrorPrompt(Exception ex)
+        {
+            // AppName is used in the message because caller.FullName is too verbose
+            if (MessageBox.Show(
+                appName + " has encountered an error.\n\n" +
+                    "Click Yes to report this error using a web browser.\n" +
+                    "Click No if you'd rather not report the error.\n" +
+                    "Please consider submitting the report to help find and fix this issue.\n\n" +
+                    "Error:\n" +
+                    ex.Message + "\n" +
+                    ex.StackTrace,
+                "Report Application Error?",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Stop) == DialogResult.Yes)
+            {
+                ReportError(ex, true);
+            }
+        }
+
+        public static void ReportError(Exception ex, bool exitAfterReport)
         {
             try
             {
-                // AppName is used in the message because caller.FullName is too verbose
-                if (MessageBox.Show(
-                    appName + " has encountered an error.\n\n" +
-                        "Click Yes to report this error using a web browser.\n" +
-                        "Click No if you'd rather not report the error.\n" +
-                        "Please consider submitting the report to help find and fix this issue.\n\n" +
-                        "Error:\n" +
-                        ex.Message + "\n" +
-                        ex.StackTrace,
-                    "Report Application Error?",
-                    MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Stop) == DialogResult.Yes)
+                // Get base url
+                string url = baseUrl;
+
+                // Add error message to it
+                Assembly caller = Assembly.GetEntryAssembly();
+                string errorText = "Additional details:\n\n" +
+                    "Time: " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "\n" +
+                    "Program: " + caller.FullName + "\n" +
+                    "Program location: " + caller.Location + "\n" +
+                    "OS: " + GetOSVersionString() + "\n" +
+                    "OS Culture: " + System.Globalization.CultureInfo.CurrentCulture.Name + "\n" +
+                    "Framework: " + Environment.Version + (Environment.Is64BitProcess ? " (x64)" : " (x86)") + "\n\n" +
+                    "Error:\n" +
+                    ex.GetType().ToString() + " (" + ex.Message + ")\n" +
+                    ex.StackTrace;
+                // URL encode message
+                url += System.Uri.EscapeDataString(errorText.Trim());
+
+                // Limit command line length
+                if (url.Length > CommandLineMaxLength)
                 {
-                    // Get base url
-                    string url = baseUrl;
-
-                    // Add error message to it
-                    Assembly caller = Assembly.GetEntryAssembly();
-                    string errorText = "Additional details:\n\n" +
-                        "Time: " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "\n" +
-                        "Program: " + caller.FullName + "\n" +
-                        "Program location: " + caller.Location + "\n" +
-                        "OS: " + GetOSVersionString() + "\n" +
-                        "OS Culture: " + System.Globalization.CultureInfo.CurrentCulture.Name + "\n" +
-                        "Framework: " + Environment.Version + (Environment.Is64BitProcess ? " (x64)" : " (x86)") + "\n\n" +
-                        "Error:\n" +
-                        ex.GetType().ToString() + " (" + ex.Message + ")\n" +
-                        ex.StackTrace;
-                    // URL encode message
-                    url += System.Uri.EscapeDataString(errorText.Trim());
-
-                    // Limit command line length
-                    if (url.Length > CommandLineMaxLength)
-                    {
-                        string clippedMessage = System.Uri.EscapeDataString("\n(Report clipped)");
-                        url = url.Substring(0, CommandLineMaxLength - clippedMessage.Length);
-                        url += clippedMessage;
-                    }
-
-                    // Open URL in browser
-                    System.Diagnostics.Process.Start(url);
+                    string clippedMessage = System.Uri.EscapeDataString("\n(Report clipped)");
+                    url = url.Substring(0, CommandLineMaxLength - clippedMessage.Length);
+                    url += clippedMessage;
                 }
+
+                // Open URL in browser
+                System.Diagnostics.Process.Start(url);
             }
             finally
             {
-                Application.Exit();
+                if (exitAfterReport)
+                {
+                    Application.Exit();
+                }
             }
         }
 

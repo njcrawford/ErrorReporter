@@ -25,5 +25,11 @@ namespace ReportTester
             // Do bad stuff!
             int z = x / y;
         }
+
+        private void btnManualReport_Click(object sender, EventArgs e)
+        {
+            Exception test = new Exception("A test exception");
+            NJCrawford.ErrorReporter.ReportError(test, false);
+        }
     }
 }
